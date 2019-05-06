@@ -1,0 +1,202 @@
+<html>
+
+<head>
+    <style>
+        body {
+            font-family: Helvetica, Arial, sans-serif
+        }
+
+        h1 {
+            background-color: #2a5599;
+            /* TODO 1
+            change the text to white and add a padding of 5px
+            2 lines of code
+            */
+            color: white;
+            padding: 5px;
+        }
+        
+        svg{
+            border: 1px solid ;
+        }
+        .mainview{
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
+    <script src="d3.js"></script> <!-- Add this line to your file -->
+</head>
+
+<body>
+    <h1> Project 2 : Visualizing Temporal Data </h1>
+    <div class="mainView">
+        <div>
+            <h2>Viz 1-Heat Map All Countries Donation</h2>
+            <svg id="grid"></svg>
+        </div>
+        
+    </div>
+</body>
+ <!-- Add this section to your file -->
+ <script> 
+    function loadData() {
+        return Promise.all([
+            d3.csv("countrydata-countrydata.csv"),
+        ]).then(showData)
+    }
+    function showData(datasources) {
+        let countries = datasources[0]
+
+
+        let dataIndex = {}
+
+        for(let c of countries){
+            let donor = c.Donor;
+            let recipient = c.Recipient;
+            let year = c.Year;
+            if(dataIndex[donor] != undefined) {
+                dataIndex[donor][year] = 0;
+            } 
+            else {
+                dataIndex[donor] = {
+                    [c.Year] : 0,
+                }
+            } if (dataIndex[recipient] != undefined) {
+                dataIndex[recipient][year] = 0;
+            } else {
+                dataIndex[recipient] = {
+                    [c.Year] : 0,
+                }
+            }
+        }
+        for(let c of countries){
+            let donor = c.Donor;
+            let recipient = c.Recipient;
+            let year = c.Year;
+
+            dataIndex[donor][year] += +c.CommitmenAmountUsdConstant;
+            dataIndex[recipient][year] -= c.CommitmenAmountUsdConstant;
+        }
+        console.log(dataIndex);
+
+        let keys = Object.keys(dataIndex);
+        var data = [];
+        var xpos = 1; //starting xpos and ypos at 1 so the stroke will show when we make the grid below
+        var ypos = 1;
+        var width = 615/41;
+        var height = 564/(keys.length);
+
+
+
+        // iterate for rows 
+        for (var row = 0; row < keys.length; row++) {
+            data.push([]);
+
+            // iterate for cells/columns inside rows
+            for (var column = 0; column <= (2013-1973); column++) {
+                if(dataIndex[keys[row]][column+1973] == undefined){
+                    data[row].push({
+                        country: keys[row],
+                        sumDonations: 0,
+                        x: xpos,
+                        y: ypos,
+                    });
+                } else {
+                    data[row].push({
+                        country: keys[row],
+                        sumDonations: dataIndex[keys[row]][column+1973],
+                        x: xpos,
+                        y: ypos,
+                    });
+                }
+                // increment the x position. I.e. move it over by 50 (width variable)
+                xpos += width;
+            }
+            // reset the x position after a row is complete
+            xpos = 1;
+            // increment the y position for the next row. Move it down 50 (height variable)
+            ypos += height; 
+        }
+        console.log(data);
+
+        let maxDonation = undefined;
+        let minDonation = undefined
+        for(countries in dataIndex){
+            if (maxDonation == undefined){
+                maxDonation = d3.max(d3.values(dataIndex[countries]));
+            } else if (d3.max(dataIndex[countries]) > maxDonation){
+                maxDonation = d3.max(d3.values(dataIndex[countries]));
+            } if (minDonation == undefined) {
+                minDonation = d3.min(d3.values(dataIndex[countries]));
+            } else if (d3.min(dataIndex[countries]) < minDonation){
+                minDonation = d3.min(d3.values(dataIndex[countries]));
+            }
+        }
+        console.log(minDonation, maxDonation);
+
+        let colorScale = d3.scaleQuantize()
+            .domain([minDonation, maxDonation])
+            .range(d3.schemeBrBG[9]);
+
+        var container = d3.select("#grid")
+            .data(data)
+            .attr("width",800)
+            .attr("height",1000);
+
+        var row = container.selectAll(".row")
+            .data(data)
+            .enter().append("g")
+            .attr("class", "row")
+
+        var column = row.selectAll(".square")
+            .data(function(d) { return d; })
+            .enter().append("rect")
+            .attr("class","square")
+            .attr("x", function(d) { return d.x; })
+            .attr("y", function(d) { return d.y; })
+            .attr("width", width)
+            .attr("height", height)
+            .style("fill", d=> colorScale(d.sumDonations))
+            .style("stroke", "#222");
+
+        row.append("text")
+            .attr("x", 620)
+            .attr("y", function(d) { return d[0].y + 8; })
+            .attr("dy", ".35em")
+            .text(function(d, i) { return keys[i]; });
+        row.append("text")
+            .attr("x", function(d, i) { if(i < 41) return d[i].x; })
+            .attr("y", 570)
+            .attr("dy", ".35em")
+            .style("font-size", "5px")
+            .text(function(d, i) { if(i < 41) return (i+1973) });  
+
+        var SVG = d3.select("#grid")
+        var size = 20
+        SVG.selectAll("mydots")
+          .data(colorScale.ticks(9))
+          .enter()
+          .append("rect")
+            .attr("x", 10)
+            .attr("y", function(d,i){ return 600 + i*(size+5)}) 
+            .attr("width", size)
+            .attr("height", size)
+            .style("fill", function(d){ return colorScale(d)})
+
+        SVG.selectAll("mylabels")
+          .data(colorScale.ticks(9))
+          .enter()
+          .append("text")
+            .attr("x", 10 + size*1.2)
+            .attr("y", function(d,i){ return 600 + i*(size+5) + (size/2)}) 
+            .style("fill", "#e3320")
+            .text(function(d){ return d})
+            .attr("text-anchor", "left")
+            .style("alignment-baseline", "middle")
+    }
+    loadData();
+    
+ </script>
+</html>
+
+</html>

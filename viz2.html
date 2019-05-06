@@ -1,0 +1,397 @@
+<html>
+
+<head>
+    <style>
+        body {
+            font-family: Helvetica, Arial, sans-serif
+        }
+
+        h1 {
+            background-color: #2a5599;
+            /* TODO 1
+            change the text to white and add a padding of 5px
+            2 lines of code
+            */
+            color: white;
+            padding: 5px;
+        }
+        
+        svg{
+            border: 1px solid ;
+        }
+        #line {
+          fill: none;
+          stroke-width: 1px;
+        }
+        .mainview{
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
+    <script src="d3.js"></script> <!-- Add this line to your file -->
+</head>
+
+<body>
+    <h1> Project 2 : Visualizing Temporal Data </h1>
+    <div class="mainView">
+        <div>
+            <h2>Viz 2-Stacked Area Top 10 Purpose Codes</h2>
+            <svg id="line"></svg>
+        </div>
+        
+    </div>
+</body>
+ <!-- Add this section to your file -->
+ <script> 
+    function loadData() {
+        return Promise.all([
+            d3.csv("countrydata-countrydata.csv"),
+        ]).then(showData)
+    }
+    function showData(datasources) {
+        let countries = datasources[0]
+
+
+        let dataIndex = {}
+
+        for(let c of countries){
+            let purpose = c.CoalescedPurposeName;
+                dataIndex[purpose] = 0;
+        }
+        for(let c of countries){
+            let purpose = c.CoalescedPurposeName;
+                dataIndex[purpose] += +c.CommitmenAmountUsdConstant;
+        }
+
+        let data = [];
+        for(let pew in dataIndex){
+            data.push({
+                purpose: pew,
+                sum: dataIndex[pew],
+            })
+        }
+        data.sort(function(x, y){
+            return d3.ascending(y.sum, x.sum);
+        })
+        let top10 = data.slice(0,10);
+        let topIndex = {}
+        for (let i = 0; i < 10; ++i){
+            topIndex[top10[i].purpose] = {};
+            for (let k = 1973; k < 2014; ++k){
+                topIndex[top10[i].purpose][k] = 0;
+            }
+        }
+        for(let c of countries){
+            let purpose = c.CoalescedPurposeName;
+            let year = c.Year;
+            if(topIndex[purpose] != undefined){
+                topIndex[purpose][year] += +c.CommitmenAmountUsdConstant;
+            }
+        }
+
+        let maxSumOfYear = 0;
+        let forEveryYear
+        for(let i in topIndex){
+            for(let j in topIndex[i]){
+                if (topIndex[i][j] > maxSumOfYear) maxSumOfYear = topIndex[i][j];
+            }
+        }
+
+        let width = 500;
+        let height = 500;
+
+        let bodyheight = 1000;
+        let bodywidth = 800
+
+
+        let xScale = d3.scaleLinear()
+            .domain([1973, 2013])
+            .range([0, width]);
+        let yScale = d3.scaleLinear()
+            .domain([0, maxSumOfYear])
+            .range([height, 0]);
+
+        let valueLine = d3.line()
+            .x(function(d, i) { return xScale(i+1973); })
+            .y(function(d, i) { return yScale(d); });
+
+
+        let pew = []
+        for(let year in topIndex['Air transport']){
+            pew.push(topIndex['Air transport'][year]);
+        }
+        let container = d3.select('#line')
+            .attr("width",bodywidth)
+            .attr("height",bodyheight);
+        container.append("g")
+            .call(d3.axisBottom(xScale))
+            .attr("transform", "translate(75, " + (75 + height) + ")");
+        container.append("g")
+            .call(d3.axisLeft(yScale))
+            .attr("transform", "translate(75, 75)");
+        container.append("path")
+            .datum(pew)
+            .attr("class", "line")
+            .attr("d", valueLine)
+            .attr("stroke", "#8dd3c7")
+            .attr("transform", "translate(75, 75)");
+        pew = []
+        for(let year in topIndex['Import support (capital goods)']){
+            pew.push(topIndex['Import support (capital goods)'][year]);
+        }
+        container.append("path")
+            .datum(pew)
+            .attr("class", "line")
+            .attr("d", valueLine)
+            .attr("stroke", "#ffffb3")
+            .attr("transform", "translate(75, 75)");
+        pew = []
+        for(let year in topIndex['Industrial development']){
+            pew.push(topIndex['Industrial development'][year]);
+        }
+        container.append("path")
+            .datum(pew)
+            .attr("class", "line")
+            .attr("d", valueLine)
+            .attr("stroke", "#bebada")
+            .attr("transform", "translate(75, 75)");
+        pew = []
+        for(let year in topIndex['Power generation/non-renewable sources']){
+            pew.push(topIndex['Power generation/non-renewable sources'][year]);
+        }
+        container.append("path")
+            .datum(pew)
+            .attr("class", "line")
+            .attr("d", valueLine)
+            .attr("stroke", "#fb8072")
+            .attr("transform", "translate(75, 75)");
+        pew = []
+        for(let year in topIndex['Power generation/renewable sources']){
+            pew.push(topIndex['Power generation/renewable sources'][year]);
+        }
+        container.append("path")
+            .datum(pew)
+            .attr("class", "line")
+            .attr("d", valueLine)
+            .attr("stroke", "#80b1d3")
+            .attr("transform", "translate(75, 75)");
+        pew = []
+        for(let year in topIndex['RESCHEDULING AND REFINANCING']){
+            pew.push(topIndex['RESCHEDULING AND REFINANCING'][year]);
+        }
+        container.append("path")
+            .datum(pew)
+            .attr("class", "line")
+            .attr("d", valueLine)
+            .attr("stroke", "#fdb462")
+            .attr("transform", "translate(75, 75)");
+        pew = []
+        for(let year in topIndex['Rail transport']){
+            pew.push(topIndex['Rail transport'][year]);
+        }
+        container.append("path")
+            .datum(pew)
+            .attr("class", "line")
+            .attr("d", valueLine)
+            .attr("stroke", "#b3de69")
+            .attr("transform", "translate(75, 75)");
+        pew = []
+        for(let year in topIndex['Sectors not specified']){
+            pew.push(topIndex['Sectors not specified'][year]);
+        }
+        container.append("path")
+            .datum(pew)
+            .attr("class", "line")
+            .attr("d", valueLine)
+            .attr("stroke", "#fccde5")
+            .attr("transform", "translate(75, 75)");
+        pew = []
+        for(let year in topIndex['Social/ welfare services']){
+            pew.push(topIndex['Social/ welfare services'][year]);
+        }
+        container.append("path")
+            .datum(pew)
+            .attr("class", "line")
+            .attr("d", valueLine)
+            .attr("stroke", "#d9d9d9")
+            .attr("transform", "translate(75, 75)");
+        pew = []
+        for(let year in topIndex['Telecommunications']){
+            pew.push(topIndex['Telecommunications'][year]);
+        }
+        container.append("path")
+            .datum(pew)
+            .attr("class", "line")
+            .attr("d", valueLine)
+            .attr("stroke", "#bc80bd")
+            .attr("transform", "translate(75, 75)");
+
+        let colorScale = ['#8dd3c7',
+            '#ffffb3',
+            '#bebada',
+            '#fb8072',
+            '#80b1d3',
+            '#fdb462',
+            '#b3de69',
+            '#fccde5',
+            '#d9d9d9',
+            '#bc80bd'];
+        let category = ['Air transport',
+            'Import support (capital goods)',
+            'Industrial development',
+            'Power generation/non-renewable sources',
+            'Power generation/renewable sources',
+            'RESCHEDULING AND REFINANCING',
+            'Rail transport',
+            'Sectors not specified',
+            'Social/ welfare services',
+            'Telecommunications'];
+
+        var SVG = d3.select("#line")
+        var size = 20
+        SVG.selectAll("colorScale")
+          .data(colorScale)
+          .enter()
+          .append("rect")
+            .attr("x", 10)
+            .attr("y", function(d,i){ return 600 + i*(size+5); }) 
+            .attr("width", size)
+            .attr("height", size)
+            .style("fill", function(d, i){ return d; });
+
+        SVG.selectAll("category")
+          .data(category)
+          .enter()
+          .append("text")
+            .attr("x", 10 + size*1.2)
+            .attr("y", function(d,i){ return 600 + i*(size+5) + (size/2); }) 
+            .style("fill", "black")
+            .text(function(d){ console.log(d); return d; })
+            .attr("text-anchor", "left")
+            .style("alignment-baseline", "middle");
+
+
+
+    }  
+
+        // let keys = Object.keys(dataIndex);
+        // var data = [];
+        // var xpos = 1; //starting xpos and ypos at 1 so the stroke will show when we make the grid below
+        // var ypos = 1;
+        // var width = 615/41;
+        // var height = 564/(keys.length);
+
+
+
+        // // iterate for rows 
+        // for (var row = 0; row < keys.length; row++) {
+        //     data.push([]);
+
+        //     // iterate for cells/columns inside rows
+        //     for (var column = 0; column <= (2013-1973); column++) {
+        //         if(dataIndex[keys[row]][column+1973] == undefined){
+        //             data[row].push({
+        //                 country: keys[row],
+        //                 sumDonations: 0,
+        //                 x: xpos,
+        //                 y: ypos,
+        //             });
+        //         } else {
+        //             data[row].push({
+        //                 country: keys[row],
+        //                 sumDonations: dataIndex[keys[row]][column+1973],
+        //                 x: xpos,
+        //                 y: ypos,
+        //             });
+        //         }
+        //         // increment the x position. I.e. move it over by 50 (width variable)
+        //         xpos += width;
+        //     }
+        //     // reset the x position after a row is complete
+        //     xpos = 1;
+        //     // increment the y position for the next row. Move it down 50 (height variable)
+        //     ypos += height; 
+        // }
+        // console.log(data);
+
+        // let maxDonation = undefined;
+        // let minDonation = undefined
+        // for(countries in dataIndex){
+        //     if (maxDonation == undefined){
+        //         maxDonation = d3.max(d3.values(dataIndex[countries]));
+        //     } else if (d3.max(dataIndex[countries]) > maxDonation){
+        //         maxDonation = d3.max(d3.values(dataIndex[countries]));
+        //     } if (minDonation == undefined) {
+        //         minDonation = d3.min(d3.values(dataIndex[countries]));
+        //     } else if (d3.min(dataIndex[countries]) < minDonation){
+        //         minDonation = d3.min(d3.values(dataIndex[countries]));
+        //     }
+        // }
+        // console.log(minDonation, maxDonation);
+
+        // let colorScale = d3.scaleQuantize()
+        //     .domain([minDonation, maxDonation])
+        //     .range(d3.schemeBrBG[9]);
+
+        // var container = d3.select("#grid")
+        //     .data(data)
+        //     .attr("width",800)
+        //     .attr("height",1000);
+
+        // var row = container.selectAll(".row")
+        //     .data(data)
+        //     .enter().append("g")
+        //     .attr("class", "row")
+
+        // var column = row.selectAll(".square")
+        //     .data(function(d) { return d; })
+        //     .enter().append("rect")
+        //     .attr("class","square")
+        //     .attr("x", function(d) { return d.x; })
+        //     .attr("y", function(d) { return d.y; })
+        //     .attr("width", width)
+        //     .attr("height", height)
+        //     .style("fill", d=> colorScale(d.sumDonations))
+        //     .style("stroke", "#222");
+
+        // row.append("text")
+        //     .attr("x", 620)
+        //     .attr("y", function(d) { return d[0].y + 8; })
+        //     .attr("dy", ".35em")
+        //     .text(function(d, i) { return keys[i]; });
+        // row.append("text")
+        //     .attr("x", function(d, i) { if(i < 41) return d[i].x; })
+        //     .attr("y", 570)
+        //     .attr("dy", ".35em")
+        //     .style("font-size", "5px")
+        //     .text(function(d, i) { if(i < 41) return (i+1973) });  
+
+        // var SVG = d3.select("#grid")
+        // var size = 20
+        // SVG.selectAll("mydots")
+        //   .data(colorScale.ticks(9))
+        //   .enter()
+        //   .append("rect")
+        //     .attr("x", 10)
+        //     .attr("y", function(d,i){ return 600 + i*(size+5)}) 
+        //     .attr("width", size)
+        //     .attr("height", size)
+        //     .style("fill", function(d){ return colorScale(d)})
+
+        // SVG.selectAll("mylabels")
+        //   .data(colorScale.ticks(9))
+        //   .enter()
+        //   .append("text")
+        //     .attr("x", 10 + size*1.2)
+        //     .attr("y", function(d,i){ return 600 + i*(size+5) + (size/2)}) 
+        //     .style("fill", "#e3320")
+        //     .text(function(d){ return d})
+        //     .attr("text-anchor", "left")
+        //     .style("alignment-baseline", "middle")
+    
+    loadData();
+    
+ </script>
+</html>
+
+</html>
